@@ -4,8 +4,7 @@
 Explore a pixel-art city, battle silly robots by solving math problems, rescue a friend from the Robo-Baron,
 and decorate your Hero House. No ads, no accounts, no internet needed. It's one HTML file you open in a browser.
 
-> **▶ Play:** download `index.html` and double-click it, or turn on GitHub Pages for this repository
-> (Settings → Pages → Deploy from branch `main`, folder `/root`) to get a link that works on any computer or tablet.
+> **▶ Play now:** https://charlessouth.github.io/hero-quest-math-city/ (works on any computer or tablet, nothing to install)
 
 ---
 
