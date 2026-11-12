@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hero Quest: Math City</title>
+<style>
+  :root {
+    --night: #10163a;
+    --night2: #1b2452;
+    --cyan: #29d9ff;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --green: #2ed573;
+    --purple: #a55eea;
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Comic Sans MS", "Chalkboard SE", "Segoe UI", sans-serif;
+    background: radial-gradient(circle at 50% -20%, #2a3a7a 0%, var(--night) 55%, #0a0e26 100%);
+    color: var(--white);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .star { position: fixed; width: 4px; height: 4px; background: #fff; border-radius: 50%; opacity: .5; animation: twinkle 3s infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2} 50%{opacity:.8} }
+
+  #app { position: relative; z-index: 2; text-align: center; margin: auto; padding: 18px 8px; }
+  .screen { display: none; animation: pop .3s ease; }
+  .screen.active { display: block; }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  h1.logo {
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    color: var(--yellow);
+    text-shadow: 4px 4px 0 var(--red), 8px 8px 0 rgba(0,0,0,.4);
+    transform: rotate(-2deg);
+    margin-bottom: .25em;
+    letter-spacing: 2px;
+  }
+  .tagline { font-size: 1.15rem; color: var(--cyan); margin-bottom: 1.4em; }
+
+  .big-btn {
+    font-family: inherit; font-size: 1.4rem; font-weight: bold;
+    padding: .6em 1.6em; margin: 8px;
+    border: 4px solid #fff; border-radius: 999px;
+    background: linear-gradient(180deg, var(--red), #d63047);
+    color: #fff; cursor: pointer;
+    box-shadow: 0 6px 0 #8e1f30, 0 10px 20px rgba(0,0,0,.5);
+    transition: transform .1s;
+  }
+  .big-btn:hover { transform: translateY(-3px) scale(1.03); }
+  .big-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #8e1f30; }
+  .big-btn.green { background: linear-gradient(180deg, var(--green), #1faf5a); box-shadow: 0 6px 0 #14713b, 0 10px 20px rgba(0,0,0,.5); }
+  .big-btn.green:active { box-shadow: 0 2px 0 #14713b; }
+  .big-btn.small { font-size: 1rem; padding: .45em 1.1em; border-width: 3px; }
+  .big-btn:disabled { filter: grayscale(1); opacity: .5; cursor: default; transform: none; }
+
+  /* ------- name entry ------- */
+  #name-input, #rescue-input {
+    font-family: inherit; font-size: 1.8rem; font-weight: bold;
+    text-align: center; width: min(320px, 80vw);
+    padding: .35em; border-radius: 16px;
+    border: 4px solid var(--cyan); background: var(--night2); color: var(--yellow);
+    outline: none; margin-bottom: 20px;
+  }
+  #name-input:focus, #rescue-input:focus { border-color: var(--yellow); }
+  .picker-label { font-size: 1.15rem; color: var(--cyan); margin: 10px 0 12px; }
+  #color-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .suit-option {
+    background: var(--night2); border: 4px solid #445;
+    border-radius: 16px; padding: 8px; cursor: pointer;
+    transition: transform .1s;
+  }
+  .suit-option:hover { transform: translateY(-4px); }
+  .suit-option.selected { border-color: var(--yellow); box-shadow: 0 0 18px rgba(255,211,42,.6); }
+  .suit-option canvas { display: block; image-rendering: pixelated; }
+  #hero-preview-wrap { margin: 8px 0 16px; }
+  #hero-preview { image-rendering: pixelated; }
+
+  /* ------- overworld ------- */
+  #overworld-wrap { display: inline-block; position: relative; }
+  #world-canvas {
+    display: block;
+    border: 5px solid #000;
+    border-radius: 10px;
+    box-shadow: 0 0 0 4px var(--night2), 0 14px 40px rgba(0,0,0,.6);
+    image-rendering: pixelated;
+    background: #000;
+  }
+  #hud {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; margin-bottom: 10px; gap: 10px; flex-wrap: wrap;
+  }
+  .hud-chip {
+    background: var(--night2); border: 3px solid var(--cyan);
+    border-radius: 999px; padding: .3em .9em;
+    font-weight: bold; font-size: 1rem;
+    box-shadow: 0 3px 0 rgba(0,0,0,.4);
+  }
+  #hud-hearts { color: var(--red); border-color: var(--red); }
+  #hud-parts { color: var(--yellow); border-color: var(--yellow); }
+  #hud-zone { color: var(--cyan); }
+  #hud-lens { color: #7fe9ff; border-color: #7fe9ff; }
+  #hud-badges { color: var(--yellow); border-color: var(--purple); }
+  #btn-save {
+    font-family: inherit; font-weight: bold; font-size: 1rem;
+    padding: .3em 1em; border-radius: 999px; cursor: pointer;
+    border: 3px solid #fff; color: #fff;
+    background: linear-gradient(180deg, var(--purple), #7d3fc9);
+    box-shadow: 0 3px 0 #5a2a95;
+  }
+  #btn-save:active { transform: translateY(2px); box-shadow: none; }
+  #btn-music {
+    font-family: inherit; font-size: 1rem; padding: .3em .7em; border-radius: 999px; cursor: pointer;
+    border: 3px solid #fff; background: linear-gradient(180deg, #4ad3a0, #1f9a6e); box-shadow: 0 3px 0 #136346;
+  }
+  #btn-music.off { background: linear-gradient(180deg, #8a90a8, #5a607a); box-shadow: 0 3px 0 #3a3f55; }
+  .time-chip { display: inline-block; font-size: 1.7rem; font-weight: bold; color: #223; background: #fffdf0;
+               border: 3px solid #2b1a10; border-radius: 10px; padding: 2px 12px; font-family: 'Courier New', monospace; }
+  .time-chip.big { font-size: 2.4rem; }
+  svg.clock { vertical-align: middle; }
+  #btn-decor {
+    font-family: inherit; font-weight: bold; font-size: 1rem;
+    padding: .3em 1em; border-radius: 999px; cursor: pointer;
+    border: 3px solid #fff; color: #fff;
+    background: linear-gradient(180deg, #ffb347, #e07b00); box-shadow: 0 3px 0 #8e4a00;
+  }
+  #decor-canvas { background: #1a1230; border: 4px solid #ffb347; border-radius: 10px; cursor: pointer;
+                  max-width: 100%; image-rendering: auto; }
+  #decor-tray { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 680px; margin: 10px auto 0; }
+  .decor-item { font-family: inherit; font-size: 1.05rem; font-weight: bold; padding: 6px 12px; border-radius: 12px;
+                border: 3px solid #556; background: var(--night2); color: #fff; cursor: pointer; }
+  .decor-item .di { font-size: 1.7rem; vertical-align: middle; }
+  .decor-item.sel { border-color: var(--yellow); background: #4a3f10; box-shadow: 0 0 12px rgba(255,211,42,.6); }
+  #decor-msg { min-height: 1.5em; font-weight: bold; margin: 8px 0 0; }
+  #boss-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 210px)); gap: 14px; justify-content: center; }
+  .trophy-sub { color: var(--yellow); margin: 18px 0 8px; font-size: 1.4rem; }
+  #btn-friend {
+    font-family: inherit; font-weight: bold; font-size: 1rem;
+    padding: .3em 1em; border-radius: 999px; cursor: pointer;
+    border: 3px solid #fff; color: #fff;
+    background: linear-gradient(180deg, #ff8fc7, #e05a9e); box-shadow: 0 3px 0 #8e2a5c;
+  }
+  #friend-pop {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: rgba(16,22,58,.97); border: 4px solid #ff8fc7; border-radius: 18px;
+    padding: 14px 20px; width: min(440px, 90%); box-shadow: 0 10px 30px rgba(0,0,0,.7);
+  }
+  #friend-pop-text { font-size: 1.15rem; font-weight: bold; line-height: 1.45; margin: 6px 0 12px; }
+  #friend-pop-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  #friend-pop-art canvas { image-rendering: pixelated; }
+  #btn-ride {
+    font-family: inherit; font-weight: bold; font-size: 1rem;
+    padding: .3em 1em; border-radius: 999px; cursor: pointer;
+    border: 3px solid #fff; color: #10163a;
+    background: linear-gradient(180deg, #7fe9ff, #29b0c9); box-shadow: 0 3px 0 #14707f;
+  }
+  #garage-preview { image-rendering: pixelated; display: block; margin: 0 auto 8px; }
+  .garage-section { color: var(--yellow); font-weight: bold; font-size: 1.15rem; margin: 14px 0 6px; }
+  .garage-progress { font-size: 1.6rem; letter-spacing: 6px; margin-bottom: 8px; }
+  .shop-item canvas { image-rendering: pixelated; }
+
+  /* zone banner + message toast */
+  #zone-banner {
+    position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
+    background: rgba(16,22,58,.92); border: 3px solid var(--yellow);
+    color: var(--yellow); font-weight: bold; font-size: 1.3rem;
+    padding: .4em 1.2em; border-radius: 14px; pointer-events: none;
+    opacity: 0; transition: opacity .4s;
+    box-shadow: 0 6px 18px rgba(0,0,0,.6);
+    white-space: nowrap;
+  }
+  #toast {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+    background: rgba(16,22,58,.94); border: 3px solid var(--cyan);
+    color: #fff; font-size: 1.05rem; line-height: 1.45;
+    padding: .55em 1.1em; border-radius: 12px;
+    pointer-events: none; opacity: 0; transition: opacity .3s;
+    width: max-content; max-width: 94%;
+    box-shadow: 0 6px 18px rgba(0,0,0,.6);
+  }
+  #controls-hint { margin-top: 6px; color: #9db; font-size: .95rem; }
+  #goal-bar {
+    margin: 12px auto 0; max-width: 778px; padding: .45em 1em;
+    background: rgba(255,211,42,.12); border: 3px solid var(--yellow); border-radius: 14px;
+    color: #fff; font-weight: bold; font-size: 1.1rem; line-height: 1.4;
+  }
+  #goal-bar.flash { animation: goalflash 1s ease 2; }
+  @keyframes goalflash { 50% { background: rgba(255,211,42,.5); transform: scale(1.03); } }
+  /* puzzles */
+  #pz-card { max-width: 760px; margin: 0 auto; background: var(--night2); border: 4px solid var(--purple); border-radius: 18px; padding: 14px 16px; }
+  #pz-story { font-size: 1.25rem; font-weight: bold; line-height: 1.45; margin-bottom: 10px; }
+  #pz-display { margin: 6px 0 10px; }
+  #pz-choices { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  #pz-choices .choice-btn { font-size: 1.7rem; min-width: 76px; }
+  #pz-feedback { font-size: 1.15rem; font-weight: bold; min-height: 1.5em; margin-top: 12px; line-height: 1.45; }
+  .pz-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .pz-item {
+    min-width: 54px; min-height: 54px; padding: 4px 8px; font-size: 1.8rem; font-weight: bold;
+    background: #fff; color: #223; border: 3px solid #223; border-radius: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .pz-item.miss, .pz-cell.miss { background: var(--yellow); }
+  .pz-grid { display: inline-grid; grid-template-columns: repeat(3, auto); gap: 6px; background: #223; padding: 6px; border-radius: 12px; }
+  .pz-cell { min-width: 84px; min-height: 52px; background: #fff; color: #223; border-radius: 8px; font-size: 1.5rem; font-weight: bold;
+             display: flex; align-items: center; justify-content: center; padding: 2px 6px; }
+  .pz-scale { display: inline-flex; align-items: flex-end; gap: 6px; margin: 6px 18px; }
+  .pz-pan { min-width: 96px; min-height: 48px; background: #fff; border: 3px solid #223; border-radius: 0 0 40px 40px;
+            font-size: 1.6rem; display: flex; align-items: center; justify-content: center; padding: 2px 8px; }
+  .pz-fulcrum { font-size: 2.4rem; }
+  .pz-q { color: #223; font-weight: bold; background: var(--yellow); border-radius: 8px; padding: 0 10px; }
+  .pz-riddle { font-size: 4rem; }
+  /* trophy case */
+  #trophy-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 210px)); gap: 14px; justify-content: center; }
+  .trophy-card {
+    background: var(--night2); border: 3px solid #445; border-radius: 16px; padding: 10px 8px;
+    min-height: 150px;
+  }
+  .trophy-card.won {
+    border-color: var(--yellow); box-shadow: 0 0 18px rgba(255,211,42,.45);
+    background: radial-gradient(circle at 50% 30%, #3a3f7a, var(--night2) 70%);
+  }
+  .trophy-icon { font-size: 3.2rem; line-height: 1.2; }
+  .trophy-card.won .trophy-icon { animation: trophybob 2s ease-in-out infinite; }
+  @keyframes trophybob { 50% { transform: translateY(-5px) rotate(-4deg); } }
+  .trophy-card:not(.won) .trophy-icon { filter: grayscale(1) brightness(.35); }
+  .trophy-name { font-weight: bold; color: var(--yellow); font-size: 1.02rem; }
+  .trophy-card:not(.won) .trophy-name { color: #8a90a8; }
+  .trophy-desc { font-size: .88rem; color: #bcd; margin-top: 3px; }
+  @media (max-width: 680px) { #trophy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* coins */
+  .coin {
+    display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+    border-radius: 50%; font-weight: bold; color: #223; margin: 2px;
+    border: 3px solid rgba(0,0,0,.35); box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), inset 0 3px 0 rgba(255,255,255,.4);
+    font-family: inherit;
+  }
+  .coin.c1  { width: 40px; height: 40px; background: #d08a4e; font-size: .95rem; }
+  .coin.c5  { width: 46px; height: 46px; background: #c9ccd3; font-size: 1rem; }
+  .coin.c10 { width: 36px; height: 36px; background: #e4e6ea; font-size: .85rem; }
+  .coin.c25 { width: 52px; height: 52px; background: #d5d8de; font-size: 1.05rem; }
+  .coin-group { display: inline-block; background: #fff; border-radius: 14px; padding: 6px 10px; margin: 4px 8px; vertical-align: middle; }
+  .coin-group-label { color: #223; font-weight: bold; font-size: 1rem; }
+  .coin-pad { display: inline-flex; flex-direction: column; align-items: center; gap: 8px; }
+  .coin-palette { display: flex; gap: 10px; align-items: center; }
+  .coin-palette .coin { cursor: pointer; }
+  .coin-palette .coin:hover { transform: translateY(-3px); }
+  .coin-name { display: block; font-size: .8rem; color: var(--cyan); font-weight: bold; }
+  .coin-tray {
+    min-width: 320px; min-height: 64px; padding: 6px; background: #3a2a55;
+    border: 3px dashed var(--yellow); border-radius: 16px; display: flex; flex-wrap: wrap;
+    align-items: center; justify-content: center; max-width: 520px;
+  }
+  .coin-tray:empty::before { content: "👛 Your purse: tap coins to put them here"; color: #cbb8ea; font-size: .95rem; }
+  .coin-tray .coin { cursor: pointer; }
+  /* shapes & mirrors */
+  .shape-svg { display: inline-block; vertical-align: middle; }
+  .shape-row { display: flex; gap: 22px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  #battle-display .shape-svg, #tut-display .shape-svg, #tut-stage .shape-svg { height: 110px; width: auto; }
+  .mgrid { display: inline-grid; grid-template-columns: repeat(3, 22px); gap: 2px; background: #223; padding: 3px; border-radius: 6px; vertical-align: middle; }
+  .mgrid span { width: 22px; height: 22px; background: #fff; }
+  .mirror-line { display: inline-block; width: 6px; height: 80px; background: linear-gradient(180deg, #bfefff, #29d9ff, #bfefff); border-radius: 3px; margin: 0 14px; vertical-align: middle; box-shadow: 0 0 10px #29d9ff; }
+  #saved-flash { color: var(--green); font-weight: bold; margin-left: 8px; opacity: 0; transition: opacity .3s; }
+
+  /* ------- battle ------- */
+  #battle-wrap { position: relative; display: inline-block; }
+  #battle-canvas {
+    display: block;
+    border: 5px solid #000; border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 0 0 4px var(--night2);
+    image-rendering: pixelated;
+  }
+  .info-box {
+    position: absolute;
+    background: rgba(255,255,255,.94); color: #223;
+    border: 4px solid #223; border-radius: 12px;
+    padding: 8px 14px; min-width: 210px; text-align: left;
+    font-weight: bold; font-size: 1.05rem;
+    box-shadow: 4px 4px 0 rgba(0,0,0,.35);
+  }
+  #enemy-info { top: 16px; left: 16px; }
+  #hero-info { bottom: 16px; right: 16px; }
+  .hp-track {
+    height: 14px; display: flex; gap: 3px;
+    background: #cfd4dd; border: 2px solid #223;
+    border-radius: 7px; overflow: hidden; margin-top: 5px; padding: 1px;
+  }
+  .hp-seg { flex: 1; border-radius: 4px; background: #aab; }
+  .hp-seg.full { background: linear-gradient(180deg, #2ed573, #1faf5a); }
+  .hp-seg.hero.full { background: linear-gradient(180deg, #ff6b81, #e84a60); }
+  #battle-panel {
+    background: var(--night2);
+    border: 5px solid #000; border-top: 4px solid #000;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 0 0 4px var(--night2), 0 14px 40px rgba(0,0,0,.6);
+    padding: 12px 16px 14px;
+    width: 778px; max-width: 96vw;
+    margin: 0 auto;
+  }
+  #battle-msg { font-size: 1.2rem; font-weight: bold; min-height: 1.5em; line-height: 1.4; }
+  #battle-display { margin: 6px 0 2px; }
+  #battle-display:empty { display: none; }
+  #battle-visual { font-size: 1.5rem; min-height: 1.3em; margin: 4px 0; letter-spacing: 2px; line-height: 1.5; }
+  #battle-equation { font-size: 1.7rem; font-weight: bold; color: var(--yellow); min-height: 1.2em; }
+  #battle-equation.prompt { font-size: 1.15rem; color: var(--cyan); }
+  .battle-input-row { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 6px; }
+  #battle-answer {
+    font-size: 2rem; font-weight: bold; color: var(--yellow);
+    background: var(--night); border: 3px solid var(--cyan); border-radius: 12px;
+    min-width: 90px; padding: .15em .4em; display: inline-block; white-space: pre;
+  }
+  #numpad, #oppad, #tut-pad, #tut-ops { display: grid; grid-template-columns: repeat(6, 54px); gap: 8px; }
+  #oppad, #tut-ops { margin-top: 8px; }
+  .pad-btn {
+    font-family: inherit; font-size: 1.35rem; font-weight: bold;
+    height: 48px; border-radius: 12px;
+    border: 3px solid #fff; cursor: pointer;
+    background: linear-gradient(180deg, var(--cyan), #14a7c9); color: var(--night);
+    box-shadow: 0 4px 0 #0d7e99;
+  }
+  .pad-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d7e99; }
+  .pad-btn.ok { background: linear-gradient(180deg, var(--green), #1faf5a); box-shadow: 0 4px 0 #14713b; color: #fff; }
+  .pad-btn.del { background: linear-gradient(180deg, #ff9f43, #e8862b); box-shadow: 0 4px 0 #a85e17; color: #fff; }
+  .pad-btn.op { background: linear-gradient(180deg, var(--yellow), #d9a800); box-shadow: 0 4px 0 #8a6d00; color: #222; font-size: 1.6rem; }
+  .pad-btn:disabled { filter: grayscale(.8); opacity: .55; }
+  #battle-choices, #tut-choices { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+  #battle-choices:empty, #tut-choices:empty { display: none; }
+  #tut-display { margin: 6px 0 2px; }
+  #tut-display:empty { display: none; }
+  #tut-answer {
+    font-size: 2rem; font-weight: bold; color: var(--yellow);
+    background: var(--night); border: 3px solid var(--cyan); border-radius: 12px;
+    min-width: 90px; padding: .15em .4em; display: inline-block; white-space: pre;
+  }
+  #tut-progress { font-size: 1.3rem; font-weight: bold; color: var(--yellow); margin-bottom: 6px; }
+  #tut-badge-status { font-size: 1rem; color: var(--cyan); margin-bottom: 8px; min-height: 1.2em; }
+  .badge-big { font-size: 5rem; animation: tutpop .5s ease; }
+  .badge-name { font-size: 1.6rem; font-weight: bold; color: var(--yellow); }
+  /* number bond (whole on top, parts below) */
+  .bond { display: inline-flex; flex-direction: column; align-items: center; }
+  .bond svg line { stroke: #fff; stroke-width: 4; }
+  .bond-row { display: flex; gap: 36px; }
+  .bond-c {
+    width: 64px; height: 64px; border-radius: 50%; background: #fff; color: #223;
+    border: 4px solid #223; font-size: 1.8rem; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bond-c.top { background: var(--yellow); }
+  .bond-c.miss { background: var(--cyan); }
+  .bond-label { font-size: .9rem; color: var(--cyan); font-weight: bold; }
+  .eq-list { display: flex; flex-direction: column; gap: 6px; font-size: 1.7rem; font-weight: bold; color: var(--yellow); }
+  .eq-list .bad { color: #ff8fa3; text-decoration: line-through; }
+  .choice-btn {
+    font-family: inherit; font-size: 1.35rem; font-weight: bold;
+    padding: .4em 1em; border-radius: 14px; cursor: pointer;
+    border: 3px solid #fff; color: var(--night);
+    background: linear-gradient(180deg, #ffffff, #cfe9f5);
+    box-shadow: 0 4px 0 #6a8a99;
+  }
+  .choice-btn.selected { background: linear-gradient(180deg, var(--yellow), #e0b000); box-shadow: 0 4px 0 #8a6d00; }
+  .choice-btn.right { background: linear-gradient(180deg, var(--green), #1faf5a); color: #fff; }
+  .choice-btn:disabled { cursor: default; }
+  .check-btn {
+    font-family: inherit; font-size: 1.25rem; font-weight: bold;
+    padding: .4em 1.4em; border-radius: 999px; cursor: pointer; margin-top: 10px;
+    border: 3px solid #fff; color: #fff;
+    background: linear-gradient(180deg, var(--green), #1faf5a); box-shadow: 0 4px 0 #14713b;
+  }
+  .check-btn:disabled { filter: grayscale(.8); opacity: .55; cursor: default; }
+  #battle-actions { margin-top: 8px; }
+  .lens-btn {
+    background: linear-gradient(180deg, #7fe9ff, #29b0c9) !important;
+    box-shadow: 0 4px 0 #14707f !important; color: #10163a !important;
+  }
+
+  /* ---- problem pictures & displays ---- */
+  .pic-box { display: inline-block; border: 3px dashed var(--yellow); border-radius: 10px; padding: 0 4px; margin-right: 6px; }
+  .pic-new { display: inline-block; filter: drop-shadow(0 0 4px #2ed573); }
+  .pic-gone { display: inline-block; opacity: .35; text-decoration: line-through; }
+  .pic-rows { display: inline-block; text-align: left; }
+  .pic-row { display: block; }
+  .seq-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .seq-box {
+    min-width: 62px; padding: .15em .35em; font-size: 1.7rem; font-weight: bold;
+    background: #fff; color: #223; border: 3px solid #223; border-radius: 12px;
+  }
+  .seq-box.miss { background: var(--yellow); }
+  .seq-arrow { font-size: 1.4rem; align-self: center; color: var(--cyan); font-weight: bold; }
+  .nline { position: relative; display: inline-block; padding: 10px 26px 6px; background: #fff; border-radius: 12px; }
+  .nline-bar { position: absolute; left: 8px; right: 8px; top: 20px; height: 4px; background: #223; }
+  .nline-bar::before, .nline-bar::after {
+    content: ""; position: absolute; top: -7px; border: 9px solid transparent;
+  }
+  .nline-bar::before { left: -12px; border-right-color: #223; border-left-width: 0; }
+  .nline-bar::after { right: -12px; border-left-color: #223; border-right-width: 0; }
+  .nline-ticks { display: flex; position: relative; }
+  .nt { width: 64px; display: flex; flex-direction: column; align-items: center; }
+  .nt-mark { width: 4px; height: 24px; background: #223; }
+  .nt-lab { color: #223; font-weight: bold; font-size: 1.3rem; margin-top: 2px; }
+  .nt-lab.miss { background: var(--yellow); border: 2px solid #223; border-radius: 8px; padding: 0 10px; }
+  .bar-graph { display: inline-block; background: #fff; color: #223; border-radius: 12px; padding: 6px 14px 4px; text-align: left; }
+  .bg-title { text-align: center; font-weight: bold; font-size: 1.05rem; margin-bottom: 4px; }
+  .bg-row { display: flex; align-items: center; }
+  .bg-label { width: 120px; text-align: right; padding-right: 8px; font-weight: bold; font-size: 1rem; white-space: nowrap; }
+  .bg-cell { width: 34px; height: 30px; border: 2px solid #223; margin: 0 -1px -2px 0; background: #fff; }
+  .bg-cell.fill { background: var(--fc); }
+  .bar-graph.build .bg-cell { cursor: pointer; }
+  .bar-graph.build .bg-cell:hover { outline: 3px solid var(--yellow); outline-offset: -3px; }
+  .bg-axis { margin-top: 4px; }
+  .bg-axis .bg-label { font-size: .95rem; padding-right: 0; }
+  .bg-num { width: 34px; margin-right: -1px; text-align: right; font-weight: bold; font-size: .95rem; }
+
+  #tut-stage {
+    min-height: 150px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 18px; flex-wrap: wrap;
+    background: var(--night2); border: 4px solid var(--cyan);
+    border-radius: 18px; padding: 16px;
+    max-width: 640px; margin: 0 auto 12px;
+  }
+  #tut-caption { font-size: 1.25rem; font-weight: bold; min-height: 2.2em; max-width: 560px; margin: 0 auto 12px; line-height: 1.5; }
+  .tut-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .tut-group.boxed {
+    border: 3px dashed var(--yellow); border-radius: 14px; padding: 8px 10px;
+    flex-direction: column;
+  }
+  .tut-box-items { display: flex; gap: 6px; }
+  .tut-box-label { font-size: 1.6rem; }
+  .tut-item { font-size: 2.3rem; position: relative; display: inline-block; animation: tutpop .3s ease backwards; }
+  @keyframes tutpop { from { transform: scale(0) rotate(-20deg); } to { transform: scale(1) rotate(0); } }
+  .tut-item.crossed::after {
+    content: "✖"; position: absolute; inset: 0;
+    color: var(--red); font-size: 2.3rem; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tut-item.counting { transform: scale(1.35); transition: transform .15s; }
+  .tut-num {
+    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; font-size: .95rem; font-weight: bold;
+    border-radius: 999px; padding: 0 8px; animation: tutpop .2s ease;
+  }
+  .tut-plus { font-size: 2.6rem; font-weight: bold; color: var(--yellow); }
+  .tut-big {
+    font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: bold; color: var(--yellow);
+    text-shadow: 3px 3px 0 var(--red); animation: tutpop .4s ease;
+  }
+  #shop-items { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin: 0 auto; }
+  .shop-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--night2); border: 3px solid var(--cyan);
+    border-radius: 14px; padding: 10px 14px; text-align: left;
+  }
+  .shop-item.power { border-color: var(--yellow); }
+  .shop-item.owned { opacity: .55; border-color: #4a5; }
+  .shop-icon { font-size: 2rem; width: 48px; text-align: center; }
+  .shop-info { flex: 1; }
+  .shop-name { font-weight: bold; font-size: 1.1rem; }
+  .shop-desc { font-size: .92rem; color: #bcd; }
+  .shop-buy {
+    font-family: inherit; font-weight: bold; font-size: 1rem;
+    padding: .5em 1em; border-radius: 999px; cursor: pointer;
+    border: 3px solid #fff; color: #fff; white-space: nowrap;
+    background: linear-gradient(180deg, var(--green), #1faf5a);
+    box-shadow: 0 3px 0 #14713b;
+  }
+  .shop-buy:disabled { filter: grayscale(1); opacity: .5; cursor: default; }
+  .shop-buy:not(:disabled):active { transform: translateY(2px); box-shadow: none; }
+
+  @keyframes canvas-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 60%{transform:translateX(7px)} }
+  #battle-wrap.shake { animation: canvas-shake .35s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE -->
+  <div class="screen active" id="screen-title">
+    <h1 class="logo">HERO QUEST:<br>MATH CITY</h1>
+    <p class="tagline">Suit up. Solve. Save the city!</p>
+    <div id="title-hero" style="margin:10px 0 22px;"></div>
+    <div>
+      <button class="big-btn green" id="btn-new">NEW GAME 🚀</button>
+      <button class="big-btn" id="btn-continue" style="display:none;">CONTINUE ▶</button>
+    </div>
+    <p style="margin-top:16px; font-size:.95rem; color:#9db;">
+      <label><input type="checkbox" id="sound-toggle" checked> Sound on</label>
+    </p>
+  </div>
+
+  <!-- NAME + SUIT -->
+  <div class="screen" id="screen-name">
+    <h1 class="logo" style="font-size:clamp(1.5rem,4vw,2.1rem);">BUILD YOUR HERO</h1>
+    <p class="picker-label">What is your hero's name?</p>
+    <div><input id="name-input" maxlength="12" autocomplete="off" placeholder="Type your name"></div>
+    <p class="picker-label">Pick your transformer suit colors!</p>
+    <div id="color-row"></div>
+    <div id="hero-preview-wrap"><canvas id="hero-preview" width="96" height="96"></canvas></div>
+    <p class="picker-label">Oh no — the Robo-Baron captured someone! Who needs rescuing?</p>
+    <div id="rescue-row"></div>
+    <div><input id="rescue-input" maxlength="12" autocomplete="off" placeholder="Their name"></div>
+    <button class="big-btn green" id="btn-begin" disabled style="margin-top:14px;">START ADVENTURE! ⚡</button>
+  </div>
+
+  <!-- STORY INTRO -->
+  <div class="screen" id="screen-story">
+    <h1 class="logo" style="font-size:clamp(1.5rem,4vw,2.1rem);">MATH CITY NEEDS YOU!</h1>
+    <div id="story-art" style="margin:10px 0;"></div>
+    <div id="story-text" style="font-size:1.2rem; line-height:1.7; max-width:560px; margin:0 auto 20px;"></div>
+    <button class="big-btn green" id="btn-story-go">LET'S GO! 🚀</button>
+  </div>
+
+  <!-- OVERWORLD -->
+  <div class="screen" id="screen-world">
+    <div id="hud">
+      <span class="hud-chip" id="hud-hearts">❤❤❤</span>
+      <span class="hud-chip" id="hud-zone">Hero Base</span>
+      <span class="hud-chip" id="hud-parts">🔩 0</span>
+      <span class="hud-chip" id="hud-lens">🔍 2</span>
+      <span class="hud-chip" id="hud-badges">🏅 0</span>
+      <span><button id="btn-decor" style="display:none;">🛋️ DECORATE</button> <button id="btn-friend" style="display:none;">🤝</button> <button id="btn-ride" style="display:none;">🏍️ RIDE</button> <button id="btn-music" title="Music on/off">🎵</button> <button id="btn-save">💾 SAVE</button><span id="saved-flash">Saved! ✔</span></span>
+    </div>
+    <div id="overworld-wrap">
+      <canvas id="world-canvas" width="768" height="528"></canvas>
+      <div id="zone-banner"></div>
+      <div id="toast"></div>
+      <div id="friend-pop" style="display:none;">
+        <div id="friend-pop-art"></div>
+        <p id="friend-pop-text"></p>
+        <div id="friend-pop-btns"></div>
+      </div>
+    </div>
+    <p id="goal-bar">🎯 </p>
+    <p id="controls-hint">Move with the arrow keys (or W A S D)</p>
+  </div>
+
+  <!-- PRACTICE PARK STATION -->
+  <div class="screen" id="screen-tutorial">
+    <h1 class="logo" id="tut-title" style="font-size:clamp(1.5rem,4vw,2.2rem);">🏅 STATION</h1>
+    <p id="tut-badge-status"></p>
+    <div id="tut-stage"></div>
+    <p id="tut-caption"></p>
+    <div id="tut-lesson-controls">
+      <button class="big-btn small" id="btn-tut-skip" style="display:none;">⏩ Skip to the challenge</button>
+      <button class="big-btn small green" id="btn-tut-next">▶ Next</button>
+    </div>
+    <div id="tut-practice" style="display:none; max-width:760px; margin:0 auto;">
+      <p id="tut-progress"></p>
+      <p id="tut-problem" style="font-size:1.2rem; font-weight:bold; min-height:2.4em; line-height:1.5;"></p>
+      <div id="tut-display"></div>
+      <p id="tut-visual" style="font-size:1.5rem; min-height:1.3em; letter-spacing:2px; line-height:1.5;"></p>
+      <p id="tut-equation" style="font-size:1.7rem; font-weight:bold; color:var(--yellow); min-height:1.2em;"></p>
+      <div id="tut-choices"></div>
+      <div class="battle-input-row" id="tut-input-row" style="margin-top:6px;">
+        <span id="tut-answer">&nbsp;</span>
+        <div><div id="tut-pad"></div><div id="tut-ops"></div></div>
+      </div>
+      <div id="tut-check-row" style="display:none;"><button class="check-btn" id="btn-tut-check">✔ CHECK</button></div>
+      <p id="tut-feedback" style="font-size:1.15rem; font-weight:bold; min-height:1.5em; margin-top:10px; line-height:1.4;"></p>
+      <p id="tut-stars" style="font-size:1.4rem; letter-spacing:3px;"></p>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="big-btn small" id="btn-tut-replay" style="display:none;">🔁 Watch the lesson again</button>
+      <button class="big-btn small" id="btn-tut-exit">🚪 Back to the park</button>
+    </div>
+  </div>
+
+  <!-- WORKSHOP SHOP -->
+  <div class="screen" id="screen-shop">
+    <h1 class="logo" style="font-size:clamp(1.5rem,4vw,2.2rem);">🔧 THE WORKSHOP</h1>
+    <p id="shop-greeting" class="tagline" style="margin-bottom:.6em;"></p>
+    <p class="hud-chip" id="shop-parts" style="display:inline-block; margin-bottom:14px;">🔩 0</p>
+    <div id="shop-items"></div>
+    <button class="big-btn" id="btn-shop-exit" style="margin-top:14px;">🚪 Back outside</button>
+  </div>
+
+  <!-- POWER-UP CUTSCENE -->
+  <div class="screen" id="screen-powerup">
+    <h1 class="logo" id="powerup-title" style="font-size:clamp(1.6rem,5vw,2.5rem);">SUIT UPGRADE!</h1>
+    <div style="display:flex; justify-content:center;">
+      <canvas id="powerup-canvas" width="360" height="240" style="image-rendering:pixelated;"></canvas>
+    </div>
+    <p id="powerup-text" style="font-size:1.25rem; line-height:1.6; max-width:520px; margin:6px auto 18px;"></p>
+    <button class="big-btn green" id="btn-powerup-done">AWESOME! ⚡</button>
+  </div>
+
+  <!-- TROPHY CASE -->
+  <div class="screen" id="screen-trophies">
+    <h1 class="logo" style="font-size:clamp(1.6rem,5vw,2.5rem);">🏆 TROPHY CASE</h1>
+    <p class="tagline" id="trophy-count" style="margin-bottom:.8em;"></p>
+    <div id="trophy-grid"></div>
+    <h2 class="trophy-sub">👑 BOSS TROPHIES</h2>
+    <div id="boss-grid"></div>
+    <button class="big-btn" id="btn-trophy-exit" style="margin-top:16px;">🏠 Back to the house</button>
+  </div>
+
+  <!-- DECORATE HERO HOUSE -->
+  <div class="screen" id="screen-decor">
+    <h1 class="logo" style="font-size:clamp(1.5rem,4vw,2.2rem);">🛋️ DECORATE HERO HOUSE</h1>
+    <p class="tagline" id="decor-sub" style="margin-bottom:.5em;">Pick a decoration below, then tap a spot in your house!</p>
+    <canvas id="decor-canvas" width="640" height="440"></canvas>
+    <p id="decor-msg"></p>
+    <div id="decor-tray"></div>
+    <button class="big-btn" id="btn-decor-done" style="margin-top:14px;">✅ All done!</button>
+  </div>
+
+  <!-- ROBO-GARAGE: hover-bike bay & paint shop -->
+  <div class="screen" id="screen-garage">
+    <h1 class="logo" id="garage-title" style="font-size:clamp(1.5rem,4vw,2.2rem);">🏍️ HOVER-BIKE BAY</h1>
+    <p class="tagline" id="garage-sub" style="margin-bottom:.4em;"></p>
+    <p class="hud-chip" id="garage-parts" style="display:inline-block; margin-bottom:10px;">🔩 0</p>
+    <canvas id="garage-preview" width="96" height="104"></canvas>
+    <div id="garage-items" style="display:flex; flex-direction:column; gap:10px; max-width:620px; margin:0 auto;"></div>
+    <button class="big-btn" id="btn-garage-exit" style="margin-top:14px;">🚪 Back</button>
+  </div>
+
+  <!-- PUZZLE (doors & treasure chests) -->
+  <div class="screen" id="screen-puzzle">
+    <h1 class="logo" id="pz-title" style="font-size:clamp(1.6rem,5vw,2.4rem);">🧩 PUZZLE DOOR</h1>
+    <p class="tagline" id="pz-sub" style="margin-bottom:.6em;"></p>
+    <div id="pz-card">
+      <p id="pz-story"></p>
+      <div id="pz-display"></div>
+      <div id="pz-choices"></div>
+      <p id="pz-feedback"></p>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="big-btn small green" id="btn-pz-new" style="display:none;">🧩 Try a new puzzle</button>
+      <button class="big-btn small green" id="btn-pz-done" style="display:none;">✔ Back to the adventure!</button>
+      <button class="big-btn small" id="btn-pz-exit">🚪 Leave it for now</button>
+    </div>
+  </div>
+
+  <!-- RESCUE CELEBRATION -->
+  <div class="screen" id="screen-rescue">
+    <h1 class="logo" style="font-size:clamp(1.6rem,5vw,2.6rem);">YOU DID IT!</h1>
+    <div id="rescue-art" style="margin:14px 0;"></div>
+    <div id="rescue-text" style="font-size:1.25rem; line-height:1.7; max-width:560px; margin:0 auto 20px;"></div>
+    <button class="big-btn green" id="btn-rescue-done">🎉 Back to Math City!</button>
+  </div>
+
+  <!-- BATTLE (Pokemon-style) -->
+  <div class="screen" id="screen-battle">
+    <div id="battle-wrap">
+      <canvas id="battle-canvas" width="768" height="360"></canvas>
+      <div class="info-box" id="enemy-info">
+        <span id="enemy-name">Scrap-Bot</span>
+        <div class="hp-track" id="enemy-track"></div>
+      </div>
+      <div class="info-box" id="hero-info">
+        <span id="hero-name">Hero</span>
+        <div class="hp-track" id="hero-track"></div>
+      </div>
+    </div>
+    <div id="battle-panel">
+      <p id="battle-msg">A wild Scrap-Bot appeared!</p>
+      <div id="battle-display"></div>
+      <p id="battle-visual"></p>
+      <p id="battle-equation"></p>
+      <div id="battle-choices"></div>
+      <div class="battle-input-row" id="battle-input-row">
+        <span id="battle-answer">&nbsp;</span>
+        <div>
+          <div id="numpad"></div>
+          <div id="oppad"></div>
+        </div>
+      </div>
+      <div id="battle-check-row" style="display:none;">
+        <button class="check-btn" id="btn-check">✔ CHECK</button>
+      </div>
+      <div id="battle-actions">
+        <button class="big-btn small lens-btn" id="btn-lens" style="display:none;">🔍 Picture Lens</button>
+        <span id="battle-powers"></span>
+        <button class="big-btn small" id="btn-run" style="display:none;">🏃 Run away</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   HERO QUEST: MATH CITY  —  Version 2, Phase 1: Smarter Problems
+   Modules (per plan): CONFIG, Sound, MathGen, Sprites, World, Overworld,
+   Battle, Tutorial, Shop, SaveLoad, Main
+   ===================================================================== */
+
+/* ============================ CONFIG ============================ */
+const TILE = 48, COLS = 16, ROWS = 11;
+
+const SUITS = [
+  { name: "Blaze",   primary: "#e8452c", secondary: "#2c50e8", visor: "#7fe9ff" },
+  { name: "Bolt",    primary: "#2c6de8", secondary: "#ffd32a", visor: "#c9f6ff" },
+  { name: "Forest",  primary: "#2ea84f", secondary: "#c8ccd4", visor: "#d8ffe6" },
+  { name: "Comet",   primary: "#8e44e8", secondary: "#29d9ff", visor: "#f0e0ff" },
+  { name: "Solar",   primary: "#f0a020", secondary: "#2b2b34", visor: "#fff3c4" },
+];
+
+/* Paint Shop extras (bought with bolts in the Robo-Garage). The first 5 SUITS are free. */
+const PAINT_SUITS = [
+  { name: "Ninja",  primary: "#2b2b34", secondary: "#e8452c", visor: "#ff6b81", cost: 20 },
+  { name: "Ocean",  primary: "#167a8c", secondary: "#1b2452", visor: "#7fe9ff", cost: 20 },
+  { name: "Candy",  primary: "#ff8fc7", secondary: "#7ed3a0", visor: "#fff0f8", cost: 25 },
+  { name: "Lava",   primary: "#f0501e", secondary: "#2b2b34", visor: "#ffd32a", cost: 25 },
+  { name: "Galaxy", primary: "#3a1f7a", secondary: "#29d9ff", visor: "#ff6bd5", cost: 30 },
+  { name: "Royal",  primary: "#ffd32a", secondary: "#ffffff", visor: "#7fe9ff", cost: 35 },
+];
+const ALL_SUITS = SUITS.concat(PAINT_SUITS);
+/* chest decals: little pixel pictures (3x3) painted on the suit */
+const DECALS = {
+  star:  { name: "⭐ Star",      cost: 10, grid: [".Y.", "YYY", ".Y."] },
+  bolt:  { name: "⚡ Lightning", cost: 10, grid: ["..Y", "YYY", "Y.."] },
+  flame: { name: "🔥 Flame",     cost: 15, grid: [".R.", "ROR", "OYO"] },
+  heart: { name: "❤️ Heart",     cost: 15, grid: ["R.R", "RRR", ".R."] },
+};
+const DECAL_COLORS = { Y: "#ffd32a", R: "#ff4757", O: "#ff9f43", W: "#ffffff" };
+
+/* Hover-bike repairs (each costs bolts AND a puzzle). All 3 = fast travel! */
+const BIKE_STAGES = [
+  { icon: "⚙️", name: "Fix the engine",      cost: 20 },
+  { icon: "🛞", name: "Bolt on new wheels",  cost: 30 },
+  { icon: "🚀", name: "Install turbo jets",  cost: 40 },
+];
+/* where the hover-bike can zoom to (a zone must be open first) */
+const TRAVEL = [
+  { name: "🏠 Hero Base",       key: "0,0",  x: 7,  y: 6, zone: null },
+  { name: "🎈 Practice Park",   key: "-1,0", x: 11, y: 6, zone: null },
+  { name: "🏙️ City Streets",    key: "1,0",  x: 1,  y: 4, zone: "city" },
+  { name: "⛰️ Number Ridge",    key: "4,0",  x: 1,  y: 4, zone: "ridge" },
+  { name: "⛏️ Robo-Caverns",    key: "1,-1", x: 7,  y: 9, zone: "cavern" },
+  { name: "🌻 Secret Gardens",  key: "4,-1", x: 1,  y: 4, zone: "gardens" },
+  { name: "🏭 Shape Factory",   key: "4,1",  x: 7,  y: 1, zone: "factory" },
+  { name: "🗼 Villain's Tower", key: "1,1",  x: 7,  y: 1, zone: "tower" },
+  { name: "☁️ Sky Isles",       key: "0,-2", x: 7,  y: 9, zone: null, need: "flight" },
+];
+
+/* Tile ids */
+const T = {
+  FLOOR: 0, WALL: 1, TREE: 2, WATER: 3, ROCK: 4, ROAD: 5,
+  BUILDING: 6, SIGN: 7, DOOR_WORKSHOP: 8, STATION: 9,
+  CAVE_FLOOR: 11, CAVE_WALL: 12, TOWER_FLOOR: 13, TOWER_WALL: 14, FLOWERS: 15,
+  LAMP: 16, CRYSTAL: 17, BUSH: 18, BENCH: 19,
+  IN_FLOOR: 20, IN_WALL: 21, SHELF: 22, BED: 23, COUNTER: 24, RUG: 25, GATE: 26, TV: 27,
+  TROPHY: 28, CHEST: 29, PUZZLE_DOOR: 30, VOID: 31, BIKE: 32, PAINT: 33, BOSS_CASE: 34, DECOR: 35, BELT_R: 36, BELT_L: 37,
+};
+const SOLID = new Set([T.WALL, T.TREE, T.WATER, T.ROCK, T.BUILDING, T.SIGN,
+                       T.DOOR_WORKSHOP, T.STATION, T.CAVE_WALL, T.TOWER_WALL,
+                       T.LAMP, T.CRYSTAL, T.BUSH, T.BENCH,
+                       T.IN_WALL, T.SHELF, T.BED, T.COUNTER, T.GATE, T.TV, T.TROPHY, T.BOSS_CASE, T.DECOR, T.CHEST, T.PUZZLE_DOOR,
+                       T.VOID, T.BIKE, T.PAINT]);
+
+/* Which problem types show up where (repeats = more common).
+   add/sub/mult/div: classic story problems
+   rest: "the rest are..." | addto: "some more came" (change unknown)
+   takefrom: "some went away" (change unknown) | compare: "how many more/fewer"
+   eqbuild: build the equation | related: addition equation for a subtraction
+   pick2: pick the TWO equations | tens: count by 10s | numline: number line gaps
+   barread / barbuild: bar graphs | money: coins | fraction: halves & fourths
+   mirror: mirror images
+   "skill:1" forces numbers to 10 for that skill (review problems in later zones).
+   Each zone only uses skills taught by the badges needed to get there. */
+const CITY_SKILLS = ["add","add","sub","sub","rest","rest","addto","addto","takefrom","compare",
+                     "eqbuild","eqbuild"];
+const RIDGE_SKILLS = ["tens","tens","tens","tens","numline","numline","numline","numline",
+                      "add:1","sub:1","rest:1"];
+/* Robo-Caverns: the gremlins mine COINS down here and keep score on bar graphs */
+const CAVERN_SKILLS = ["barread","barread","barread","barbuild","barbuild","money","money","money","money",
+                       "compare","rest","eqbuild","numline"];
+/* Secret Gardens (after the Robo-Baron): tough adding & equations, including 3 numbers at once */
+const GARDENS_SKILLS = ["add3","add3","add3","add3","rest","addto","takefrom","compare",
+                        "eqbuild","eqbuild","eqbuild","related","pick2","sub"];
+const FACTORY_SKILLS = ["fraction","fraction","fraction","fraction","mirror","mirror","mirror",
+                        "related","related","pick2","pick2","money","barread","tens"];
+/* Sky Isles (needs FLIGHT): telling time */
+const SKY_SKILLS = ["clock"];
+const TOWER_SKILLS = ["add","sub","rest","addto","takefrom","compare","eqbuild","related","pick2",
+                      "tens","numline","barread","barbuild","money","fraction","mirror","mult",
+                      "div","div","div","div"];
+
+/* The adventure, in order. Each zone's gate needs the PREVIOUS zone's boss beaten
+   (except the City) plus that zone's Practice Park badges. A zone's stations stay
+   LOCKED until that boss is beaten, so the park only ever asks for what's needed now. */
+const ZONE_ORDER = ["city", "ridge", "cavern", "factory", "tower"];   /* the Secret Gardens open after the Robo-Baron */
+const GATES = {
+  city:    { name: "City Streets",    short: "CITY",    color: "#cfd8e6", boss: null,      badges: ["addsub", "story"] },
+  ridge:   { name: "Number Ridge",    short: "RIDGE",   color: "#f0d9a8", boss: "city",    badges: ["tens"] },
+  cavern:  { name: "Robo-Caverns",    short: "CAVES",   color: "#e0b48c", boss: "ridge",   badges: ["graphs", "money"] },
+  factory: { name: "Shape Factory",   short: "FACTORY", color: "#bcd0f0", boss: "cavern",  badges: ["shapes", "eqmaster"] },
+  tower:   { name: "Villain's Tower", short: "TOWER",   color: "#e0c8ff", boss: "factory", badges: ["mult", "div"] },
+  gardens: { name: "Secret Gardens",  short: "GARDENS", color: "#b8f0a0", boss: "baron",   badges: [] },
+};
+const BOSSES = {
+  city:    { name: "Gremlin King",   where: "City Streets",          drop: 8 },
+  ridge:   { name: "Rockslide Ram",  where: "the top of Number Ridge", drop: 9 },
+  cavern:  { name: "Drillmaster",    where: "the deepest Robo-Cavern", drop: 10 },
+  gardens: { name: "Thistle Queen",  where: "the far end of the Secret Gardens", drop: 15 },
+  factory: { name: "Shape-Shifter",  where: "the back of the Shape Factory", drop: 11 },
+  baron:   { name: "Robo-Baron",     where: "his lair in the Villain's Tower", drop: 12 },
+};
+/* which zone each boss's win opens */
+const BOSS_OPENS = { city: "ridge", ridge: "cavern", cavern: "factory", factory: "tower" };
+
+/* Practice Park stations: each one teaches a short lesson, then a 3-problem
+   BADGE CHALLENGE. Badges open the zone gates (every new game starts with none). */
+const STATIONS = [
+  { id: "addsub",   zone: "city",    x: 2,  y: 2, icon: "➕➖", label: "ADD & TAKE", name: "Add & Take Away",     skills: ["add", "sub"] },
+  { id: "story",    zone: "city",    x: 4,  y: 2, icon: "📖",   label: "STORIES",    name: "Story Detective",     skills: ["rest", "addto", "takefrom", "compare", "eqbuild", "eqbuild"] },
+  { id: "tens",     zone: "ridge",   x: 7,  y: 2, icon: "🔟",   label: "TENS",       name: "Tens & Number Lines", skills: ["tens", "numline"] },
+  { id: "eqmaster", zone: "factory", x: 10, y: 2, icon: "🔧",   label: "EQUATIONS",  name: "Equation Master",     skills: ["related", "pick2", "related"] },
+  { id: "mult",     zone: "tower",   x: 12, y: 2, icon: "✖️",   label: "GROUPS",     name: "Equal Groups",        skills: ["mult"] },
+  { id: "graphs",   zone: "cavern",  x: 2,  y: 7, icon: "📊",   label: "GRAPHS",     name: "Bar Graphs",          skills: ["barread", "barread", "barbuild"] },
+  { id: "money",    zone: "cavern",  x: 4,  y: 7, icon: "🪙",   label: "MONEY",      name: "Coin Counter",        skills: ["money"] },
+  { id: "shapes",   zone: "factory", x: 7,  y: 7, icon: "🔷",   label: "SHAPES",     name: "Shape Splitter",      skills: ["fraction", "fraction", "mirror"] },
+  { id: "div",      zone: "tower",   x: 11, y: 7, icon: "➗",   label: "SHARING",    name: "Fair Shares",         skills: ["div"] },
+  /* a bonus station up in the Sky Isles (not needed for any gate) */
+  { id: "time",     zone: "sky", screen: "0,-2", x: 5, y: 3, icon: "🕐", label: "TIME", name: "Clock Tower Time", skills: ["clock"] },
+];
+function stationAt(key, x, y) { return STATIONS.find(s => (s.screen || "-1,0") === key && s.x === x && s.y === y); }
+/* one unique trophy per badge, shown in the Trophy Case in Hero House */
+const TROPHIES = {
+  addsub:   { icon: "🏆", name: "Golden Plus Cup",       desc: "For adding and taking away like a pro." },
+  story:    { icon: "🔍", name: "Detective's Magnifier", desc: "For cracking every story problem case." },
+  tens:     { icon: "🚀", name: "Ten-Blast Rocket",      desc: "For zooming up by 10s." },
+  eqmaster: { icon: "🔧", name: "Master Wrench",         desc: "For building equations that click." },
+  mult:     { icon: "🎖️", name: "Team-Up Medal",         desc: "For counting equal groups fast." },
+  graphs:   { icon: "📊", name: "Crystal Bar Graph",     desc: "For reading and building bar graphs." },
+  money:    { icon: "💰", name: "Bag of Lucky Coins",    desc: "For counting coins like a banker." },
+  shapes:   { icon: "💎", name: "Perfect-Half Gem",      desc: "For splitting shapes into fair parts." },
+  div:      { icon: "🍕", name: "Fair-Share Pizza",      desc: "For sharing so everyone gets the same." },
+  time:     { icon: "⏰", name: "Golden Alarm Clock",    desc: "For telling time with both clock hands." },
+};
+const TROPHY_CASE_X = 5, TROPHY_CASE_Y = 1;
+const COMPANION_BED = { x: 13, y: 5 }, COMPANION_HOME = { x: 12, y: 5 };   /* in Hero House */   /* 5 tiles wide, 2 trophies per tile */
+/* ---- post-game (Phase 6) ---- */
+const BOSS_CASE_X = 11, BOSS_CASE_Y = 1;   /* 3 tiles, 2 boss trophies per tile */
+const BOSS_TROPHIES = {
+  city:    { icon: "👑", name: "Gremlin King's Crown",  desc: "For out-smarting the Gremlin King." },
+  ridge:   { icon: "🐏", name: "Golden Ram Horn",       desc: "For out-smarting the Rockslide Ram." },
+  cavern:  { icon: "⛏️", name: "Diamond Drill Bit",     desc: "For out-smarting the Drillmaster." },
+  gardens: { icon: "🌷", name: "Thistle Queen's Rose",  desc: "For out-smarting the Thistle Queen." },
+  factory: { icon: "🔷", name: "Shifty Shape Crystal",  desc: "For out-smarting the Shape-Shifter." },
+  baron:   { icon: "⚙️", name: "Robo-Baron's Big Gear", desc: "For beating the Robo-Baron and saving Math City!" },
+};
+/* decorations for Hero House. src: store (Comfy Corner Furniture), drop (post-game enemies),
+   champ (golden Champions) */
+const DECOR = {
+  plant:   { icon: "🪴", name: "Potted Plant",    src: "store", cost: 8,  msg: "A leafy friend. It never needs math homework!" },
+  teddy:   { icon: "🧸", name: "Teddy Bear",      src: "store", cost: 10, msg: "The teddy bear gives you a big fuzzy hug. 🤗" },
+  guitar:  { icon: "🎸", name: "Rock Guitar",     src: "store", cost: 15, msg: "*STRUMMMM* That sounds like a hero song!" },
+  hoop:    { icon: "🏀", name: "Basketball Hoop", src: "store", cost: 15, msg: "SWISH! 2 points... plus 2 more is FOUR!" },
+  easel:   { icon: "🎨", name: "Art Easel",       src: "store", cost: 15, msg: "A painting of you beating the Robo-Baron. Nice!" },
+  couch:   { icon: "🛋️", name: "Comfy Couch",     src: "store", cost: 20, msg: "So comfy. Perfect for a hero nap." },
+  console: { icon: "🎮", name: "Game Console",    src: "store", cost: 25, msg: "High score: 100. That's ten 10s!" },
+  planet:  { icon: "🪐", name: "Planet Lamp",     src: "store", cost: 25, msg: "A glowing planet lamp. Space-cool!" },
+  fish:    { icon: "🐠", name: "Fish Tank",       src: "store", cost: 30, msg: "Blub blub! 3 fish swim by... then 2 more. That's 5!" },
+  rocket:  { icon: "🚀", name: "Rocket Model",    src: "store", cost: 30, msg: "10... 9... 8... 7... BLAST OFF!" },
+  duck:    { icon: "🦆", name: "Rubber Duck",     src: "drop",  msg: "QUACK! (It's a very brave duck.)" },
+  cactus:  { icon: "🌵", name: "Tiny Cactus",     src: "drop",  msg: "Ouch! Pointy. Look, don't touch!" },
+  ball:    { icon: "⚽", name: "Soccer Ball",     src: "drop",  msg: "You kick it up 1, 2, 3 times. GOAL!" },
+  balloons:{ icon: "🎈", name: "Balloons",        src: "drop",  msg: "Party balloons! Every day is a hero party." },
+  donut:   { icon: "🍩", name: "GIANT Donut",     src: "drop",  msg: "A GIANT donut. Do NOT eat it. (Okay, maybe one bite.)" },
+  dino:    { icon: "🦖", name: "Dino Model",      src: "store", cost: 20, msg: "RAWR! The dino counts its teeth... it has a LOT." },
+  globe:   { icon: "🌍", name: "Spinning Globe",  src: "store", cost: 15, msg: "You spin the globe. Where will you adventure next?" },
+  piano:   { icon: "🎹", name: "Keyboard",        src: "store", cost: 25, msg: "Do re mi fa SO cool!" },
+  statue:  { icon: "🗿", name: "Silly Statue",    src: "store", cost: 12, msg: "The statue stares at you. You stare back. You win!" },
+  dragon:  { icon: "🐉", name: "Dragon Statue",   src: "champ", msg: "A golden Champion prize! The dragon looks proud of you." },
+  castle:  { icon: "🏰", name: "Toy Castle",      src: "champ", msg: "A golden Champion prize! A castle fit for a hero." },
+  unicorn: { icon: "🦄", name: "Unicorn",         src: "champ", msg: "A golden Champion prize! Sparkly AND smart." },
+  butler:  { icon: "🤖", name: "Robot Butler",    src: "champ", msg: "Robot Butler: \"Would you like a snack, HERO?\"" },
+  fountain:{ icon: "⛲", name: "Fountain",        src: "champ", msg: "A golden Champion prize! *splish splash*" },
+  skyclock:{ icon: "🕰️", name: "Sky Clock",       src: "champ", msg: "A golden Champion prize from the SKY! Tick... tock... it's HERO o'clock!" },
+  rainbow: { icon: "🌈", name: "Rainbow Arch",    src: "champ", msg: "A golden Champion prize! Red, orange, yellow, green, blue, purple!" },
+};
+const DECOR_DROP_CHANCE = .15;   /* post-game enemies sometimes drop a decoration */
+const DECOR_RESERVED = ["8,9", "12,5"];   /* the front door path and the friend's resting spot */
+/* one golden Champion per zone, after the rescue. Harder, mixed problems; big prizes. */
+const CHAMPION_SPOTS = [
+  { screen: "3,0",  type: "gremlin" },    { screen: "4,0",  type: "rockroller" },
+  { screen: "2,-1", type: "molebot" },    { screen: "4,-1", type: "bramblebug" },
+  { screen: "4,1",  type: "gizmobot" },   { screen: "1,1",  type: "knightbot" },
+  { screen: "0,-3", type: "ticktock" },
+];
+const CHAMPION_EXTRA = ["rest:2", "addto:2", "takefrom:2", "eqbuild:2", "related:2", "pick2:2", "compare:2", "mult", "div"];
+function champsLeft(g) { return CHAMPION_SPOTS.filter(c => !(g.champs && g.champs[c.screen])).length; }
+function decorFree(g, id) {
+  const d = g.decor || { owned: {}, placed: {} };
+  return (d.owned[id] || 0) - Object.values(d.placed).filter(v => v === id).length;
+}
+const BADGE_REWARD = 5;          /* bolts for earning a badge */
+const BADGE_CHALLENGE_GOAL = 3;  /* correct answers needed for a badge */
+function stationById(id) { return STATIONS.find(s => s.id === id); }
+function hasBadge(g, id) { return !!(g.badges && g.badges[id]); }
+function missingBadges(g, zone) { return GATES[zone] ? GATES[zone].badges.filter(b => !hasBadge(g, b)) : []; }
+function badgeList(ids) { return ids.map(id => { const s = stationById(id); return s.icon + " " + s.name; }).join(" and "); }
+const plural = (n, word) => word + (n === 1 ? "" : "s");
+function bossDone(g, zone) { const gt = GATES[zone]; if (!gt) return true; const b = gt.boss; return !b || !!(g.progress && g.progress[b]); }
+function stationUnlocked(g, st) { return bossDone(g, st.zone); }
+function zoneOpen(g, zone) { return bossDone(g, zone) && missingBadges(g, zone).length === 0; }
+/* one plain sentence telling him exactly what to do next */
+function nextGoal(g) {
+  for (const z of ZONE_ORDER) {
+    if (zoneOpen(g, z)) continue;
+    const gate = GATES[z];
+    if (!bossDone(g, z)) {
+      const b = BOSSES[gate.boss];
+      return `Out-smart the ${b.name.toUpperCase()} at ${b.where}!`;
+    }
+    const miss = missingBadges(g, z);
+    return `Go to PRACTICE PARK (far west ⬅) and earn the ${badgeList(miss)} ${plural(miss.length, "badge")} to open ${gate.name.toUpperCase()}!`;
+  }
+  if (!(g.progress && g.progress.baron)) {
+    if (!g.hasKey) return "Find the 🗝️ GOLDEN KEY in the east wing of the Villain's Tower!";
+    return "Unlock the lair in the Villain's Tower and out-smart the ROBO-BARON!";
+  }
+  const friend = g.rescue ? g.rescue.name : "your friend";
+  if (g.companion && g.companion.mode === "home")
+    return `${friend} is resting at Hero House. Tap the 🤝 ${friend} button to call them back!`;
+  if (!g.progress.gardens) return `Math City is safe! The SECRET GARDENS opened (east end of the Robo-Caverns). Out-smart the THISTLE QUEEN!`;
+  const left = champsLeft(g);
+  if (left > 0) return `Math City is safe! Explore with ${friend} and find the ${left} golden 👑 CHAMPION${left > 1 ? "S" : ""}!`;
+  return `You beat EVERY Champion! 🏆 Decorate Hero House 🛋️ and explore with ${friend}!`;
+}
+
+/* Zone visual themes */
+const ZONES = {
+  base:    { label: "🏠 Hero Base",       floor: "#7ec850", wall: "#4a6c2f", accent: "#5aa03c", sky: ["#8fd3ff","#c8ecff"] },
+  park:    { label: "🎈 Practice Park",   floor: "#8fd668", wall: "#4a6c2f", accent: "#6cbf4a", sky: ["#8fd3ff","#d8ffe6"] },
+  city:    { label: "🏙️ City Streets",    floor: "#9a9aa6", wall: "#5b5b68", accent: "#83838f", sky: ["#7ab8e8","#cfd8e6"], skills: CITY_SKILLS, tier: 1 },
+  ridge:   { label: "⛰️ Number Ridge",    floor: "#c4ab82", wall: "#6b5a45", accent: "#a8906a", sky: ["#7fb0e0","#f0e2c4"], skills: RIDGE_SKILLS, tier: 2 },
+  cavern:  { label: "⛏️ Robo-Caverns",    floor: "#7a6455", wall: "#3d3028", accent: "#665246", sky: ["#3d3028","#5c4a3d"], skills: CAVERN_SKILLS, tier: 2 },
+  gardens: { label: "🌻 Secret Gardens",   floor: "#86c96a", wall: "#3f7a3a", accent: "#6fb555", sky: ["#8fd3ff","#fff1c8"], skills: GARDENS_SKILLS, tier: 2 },
+  factory: { label: "🏭 Shape Factory",   floor: "#9aa6ba", wall: "#4a5468", accent: "#828ea3", sky: ["#5a6a8a","#a9b8d0"], skills: FACTORY_SKILLS, tier: 2 },
+  tower:   { label: "🗼 Villain's Tower", floor: "#6f6f8f", wall: "#33334d", accent: "#5c5c7a", sky: ["#2a2a44","#4d4d77"], skills: TOWER_SKILLS, tier: 2 },
+  sky:     { label: "☁️ Sky Isles",      floor: "#eef7ff", wall: "#b9d4ef", accent: "#d6e9fb", sky: ["#6fb6ff","#e9f6ff"], skills: SKY_SKILLS, tier: 2 },
+  interior: { label: "🚪 Inside", floor: "#c9a06a", wall: "#6e4a26", accent: "#a87f4d", sky: ["#6e4a26","#8a5f34"], skills: CITY_SKILLS, tier: 1 },
+};
+
+/* ============================ SOUND ============================ */
+const Sound = (() => {
+  let ctx = null;
+  function play(kind) {
+    const toggle = document.getElementById("sound-toggle");
+    if (toggle && !toggle.checked) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      const tunes = {
+        click:  [[880, 0, .06]],
+        step:   [[220, 0, .03]],
+        banner: [[523, 0, .1], [659, .1, .1], [784, .2, .18]],
+        save:   [[659, 0, .1], [880, .1, .2]],
+        bump:   [[140, 0, .07]],
+        zap:    [[988, 0, .07], [1319, .06, .1]],
+        block:  [[392, 0, .09], [523, .09, .14]],
+        hurt:   [[196, 0, .2], [147, .15, .25]],
+        wrong:  [[220, 0, .22]],
+        victory:[[523, 0, .12], [659, .12, .12], [784, .24, .12], [1047, .36, .3]],
+        clatter:[[300, 0, .05], [240, .07, .05], [180, .15, .06], [150, .24, .09]],
+        defeat: [[392, 0, .2], [330, .2, .2], [262, .4, .35]],
+        encounter:[[440, 0, .09], [554, .09, .09], [659, .18, .16]],
+        lens:   [[740, 0, .06], [988, .06, .06], [1245, .12, .12]],
+        brain:  [[784, 0, .08], [988, .08, .08], [1319, .16, .18]],
+        thunder:[[70, 0, .45], [55, .18, .7], [48, .45, .8]],
+      }[kind] || [];
+      tunes.forEach(([f, d, len]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "triangle"; o.frequency.value = f;
+        g.gain.setValueAtTime(.0001, now + d);
+        g.gain.exponentialRampToValueAtTime(.2, now + d + .015);
+        g.gain.exponentialRampToValueAtTime(.0001, now + d + len);
+        o.connect(g).connect(ctx.destination);
+        o.start(now + d); o.stop(now + d + len + .05);
+      });
+    } catch (e) {}
+  }
+  return { play };
+})();
+
+/* ============================ MUSIC: a little tune for every zone ============================ */
+const Music = (() => {
+  let ac = null, out = null, timer = null, want = null, worldTrack = "home", step = 0, nextT = 0, on = true;
+  try { on = localStorage.getItem("hqMusic") !== "off"; } catch (e) {}
+  const _ = null;
+  const N = n => 440 * Math.pow(2, (n - 69) / 12);
+  /* eighth-note steps (MIDI numbers, _ = rest) */
+  const TRACKS = {
+    home:    { bpm: 108, wave: "triangle", vol: .045,
+      mel:  [72,_,76,_,79,_,76,_, 77,_,76,_,74,_,_,_, 72,_,76,_,79,_,84,_, 83,_,79,_,72,_,_,_],
+      bass: [48,_,_,_,55,_,_,_, 53,_,_,_,55,_,_,_, 48,_,_,_,52,_,_,_, 55,_,_,_,48,_,_,_] },
+    city:    { bpm: 128, wave: "square", vol: .022,
+      mel:  [77,77,_,81,_,84,_,81, 79,_,77,_,74,_,72,_, 77,77,_,81,_,84,_,86, 84,_,81,_,77,_,_,_],
+      bass: [41,_,48,_,41,_,48,_, 46,_,53,_,48,_,43,_, 41,_,48,_,41,_,48,_, 46,_,48,_,41,_,_,_] },
+    ridge:   { bpm: 100, wave: "triangle", vol: .045,
+      mel:  [74,_,76,78,_,81,_,78, 76,_,74,_,71,_,_,_, 74,_,76,78,_,81,_,83, 81,_,78,_,74,_,_,_],
+      bass: [50,_,_,_,57,_,_,_, 55,_,_,_,50,_,_,_, 50,_,_,_,57,_,_,_, 57,_,_,_,50,_,_,_] },
+    cavern:  { bpm: 76, wave: "sine", vol: .05,
+      mel:  [81,_,_,_,_,_,76,_, _,_,_,_,79,_,_,_, 77,_,_,_,_,_,72,_, _,_,_,_,76,_,_,_],
+      bass: [45,_,_,_,_,_,_,_, 41,_,_,_,_,_,_,_, 43,_,_,_,_,_,_,_, 40,_,_,_,_,_,_,_] },
+    gardens: { bpm: 126, wave: "triangle", vol: .045,
+      mel:  [79,_,83,_,86,_, 84,_,83,_,81,_, 79,_,81,_,83,_, 79,_,_,_,_,_],
+      bass: [43,_,_,_,50,_, 48,_,_,_,52,_, 43,_,_,_,50,_, 43,_,_,_,47,_] },
+    factory: { bpm: 140, wave: "square", vol: .018,
+      mel:  [60,64,67,72,67,64,60,_, 62,65,69,74,69,65,62,_, 64,67,71,76,71,67,64,_, 62,65,69,74,72,_,_,_],
+      bass: [36,_,36,_,43,_,36,_, 38,_,38,_,45,_,38,_, 40,_,40,_,47,_,40,_, 38,_,43,_,36,_,_,_] },
+    tower:   { bpm: 92, wave: "sawtooth", vol: .016,
+      mel:  [69,_,72,_,71,_,68,_, 69,_,_,_,64,_,_,_, 65,_,69,_,68,_,64,_, 69,_,_,_,_,_,_,_],
+      bass: [45,45,_,45,44,_,44,_, 45,45,_,45,40,_,40,_, 41,41,_,41,40,_,40,_, 45,_,44,_,45,_,_,_] },
+    sky:     { bpm: 92, wave: "sine", vol: .05,
+      mel:  [76,_,80,_,83,_,88,_, 87,_,83,_,80,_,_,_, 78,_,81,_,85,_,90,_, 88,_,85,_,83,_,_,_],
+      bass: [52,_,_,_,_,_,_,_, 49,_,_,_,_,_,_,_, 54,_,_,_,_,_,_,_, 47,_,_,_,_,_,_,_] },
+    battle:  { bpm: 152, wave: "square", vol: .02,
+      mel:  [72,_,72,74,76,_,72,_, 79,_,77,_,76,_,74,_, 72,_,72,74,76,_,79,_, 81,_,79,_,77,_,76,_],
+      bass: [48,48,55,48,48,48,55,48, 53,53,60,53,55,55,62,55, 48,48,55,48,48,48,55,48, 53,53,55,55,48,48,_,_] },
+    boss:    { bpm: 160, wave: "sawtooth", vol: .018,
+      mel:  [69,_,69,72,71,_,69,_, 68,_,71,_,76,_,_,_, 69,_,69,72,71,_,74,_, 72,_,71,_,69,_,_,_],
+      bass: [45,45,52,45,45,45,52,45, 44,44,52,44,40,40,47,40, 45,45,52,45,41,41,48,41, 40,40,47,40,45,45,_,_] },
+  };
+  function note(n, t, len, wave, vol) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = wave; o.frequency.value = N(n);
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + .02);
+    g.gain.exponentialRampToValueAtTime(.0001, t + len);
+    o.connect(g).connect(out); o.start(t); o.stop(t + len + .05);
+  }
+  function tick() {
+    const sfx = document.getElementById("sound-toggle");
+    if (!ac || !want || !on || (sfx && !sfx.checked)) { if (ac) nextT = ac.currentTime + .05; return; }
+    const tr = TRACKS[want], spb = 60 / tr.bpm / 2;
+    if (nextT < ac.currentTime) nextT = ac.currentTime + .05;
+    while (nextT < ac.currentTime + .3) {
+      const m = tr.mel[step % tr.mel.length], b = tr.bass[step % tr.bass.length];
+      if (m) note(m, nextT, spb * .9, tr.wave, tr.vol);
+      if (b) note(b, nextT, spb * 1.7, "triangle", tr.vol * 1.1);
+      step++; nextT += spb;
+    }
+  }
+  function play(name) {
+    if (!TRACKS[name]) name = "home";
+    if (want !== name) { want = name; step = 0; }
+    if (!on) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (!out) { out = ac.createGain(); out.gain.value = .7; out.connect(ac.destination); }
+      if (ac.state === "suspended") ac.resume();
+    } catch (e) { return; }
+    if (!timer) timer = setInterval(tick, 80);
+  }
+  const ZONE_TRACK = { base: "home", park: "home", interior: "home", city: "city", ridge: "ridge", cavern: "cavern",
+                       gardens: "gardens", factory: "factory", tower: "tower", sky: "sky" };
+  function zone(z) { worldTrack = ZONE_TRACK[z] || "home"; play(worldTrack); }
+  function battle(boss) { play(boss ? "boss" : "battle"); }
+  function back() { play(worldTrack); }
+  function toggle() {
+    on = !on;
+    try { localStorage.setItem("hqMusic", on ? "on" : "off"); } catch (e) {}
+    if (on) play(want || worldTrack);
+    return on;
+  }
+  return { zone, battle, back, toggle, isOn: () => on, current: () => want };
+})();
+
